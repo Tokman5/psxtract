@@ -9,6 +9,7 @@ the emulated PSP method.
 It features a modified version of libkirk's source code to support DES
 encryption/decryption and the AMCTRL functions.
 
+このフォークではときめきメモリアル2のEBOOT.PBPを正しく変換できるように修正した。
 
 Notes
 -------
@@ -59,6 +60,7 @@ The following games have been tested with ePSXe and are known to work. All games
 - Spyro the Dragon
 - Spyro 2: Ripto's Rage
 - Spyro Year of the Dragon
+- Tokimeki Memorial 2 (Japan)
 
 If a game does not appear on this list, that does not mean it won't work - it means it hasn't been tested yet. All tested games have worked so far. If you experience graphic issues, it will be due to the settings of your emulator. For example, in Final Fantasy IX and Breath of Fire IV, the battle intro animation will not happen or look different from the original game with default ePSXe settings. Make sure to set "Framebuffer effects" to 1 or more in the settings of Pete's graphics plugin. Enabling off-screen drawing is also worth a shot. The games from the PSN store should be full versions. For example, Crash Bandicoot 3 even includes the demo of Spyro the Dragon which is accessible through a cheat code in the main menu, just like the original game.
 
