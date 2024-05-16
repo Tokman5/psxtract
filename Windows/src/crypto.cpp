@@ -194,17 +194,22 @@ int decrypt_doc(unsigned char* data, int size)
 	}
 }
 
-int unpack_pbp(FILE *infile) 
+int unpack_pbp(FILE *infile, long long input_size) 
 {
-	int maxbuffer = 16 * 1024 * 1024;
+	int maxbuffer = 32 * 1024 * 1024;
 	PBP_HEADER header;
 	int loop0;
-	int total_size;
+	long long total_size = input_size;
 
 	// Get the size of the PBP
+	/*
 	fseek(infile, 0, SEEK_END);
-	total_size = ftell(infile);
+	total_size = static_cast<unsigned long>(ftell(infile));
 	fseek(infile, 0, SEEK_SET);
+	*/
+	
+
+	printf("total file size:%10u\n", total_size);
 
 	if (total_size < 0) {
 		printf("UNPACK_PBP ERROR: Could not get the input file size.\n");
@@ -228,17 +233,17 @@ int unpack_pbp(FILE *infile)
 	// For each file in the PBP
 	for (loop0 = 0; loop0 < 8; loop0++) {
 		void *buffer;
-		int size;
+		long long  size;
 
 		// Get the size of this file
 		if (loop0 == 7) {
-			size = total_size - header.offset[loop0];
+			size = static_cast<unsigned long long>(total_size - header.offset[loop0]);
 		} else {
-			size = header.offset[loop0 + 1] - header.offset[loop0];
+			size = static_cast<unsigned long long>(header.offset[loop0 + 1] - header.offset[loop0]);
 		}
 
 		// Print out the file details
-		printf("[%d] %10d bytes | %s\n", loop0, size, pbp_filenames[loop0]);
+		printf("[%d] %10u bytes | %s\n", loop0, static_cast<unsigned int>(size), pbp_filenames[loop0]);
 
 		// Skip the file if empty
 		if (!size) continue;
@@ -257,7 +262,7 @@ int unpack_pbp(FILE *infile)
 		}
 
 		do {
-			int readsize;
+			long long readsize;
 
 			// Make sure we don't exceed the maximum buffer size
 			if (size > maxbuffer) {

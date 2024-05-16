@@ -2,9 +2,10 @@
 // Licensed under the terms of the GNU GPL, version 3
 // http://www.gnu.org/licenses/gpl-3.0.txt
 
+#include <filesystem>
 #include "psxtract.h"
 
-int extract_startdat(FILE *psar, bool isMultidisc)
+unsigned long extract_startdat(FILE *psar, bool isMultidisc)
 {
 	if (psar == NULL)
 	{
@@ -13,7 +14,7 @@ int extract_startdat(FILE *psar, bool isMultidisc)
 	}
 
 	// Get the STARTDAT offset (0xC for single disc and 0x10 for multidisc due to header magic length).
-	int startdat_offset;
+	unsigned long startdat_offset;
 	if (isMultidisc)
 		fseek(psar, 0x10, SEEK_SET);
 	else
@@ -196,7 +197,7 @@ int decrypt_unknown_data(FILE *psar, int unknown_data_offset, int startdat_offse
 	return 0;
 }
 
-int decrypt_iso_header(FILE *psar, int header_offset, int header_size, unsigned char *pgd_key, int disc_num)
+int decrypt_iso_header(FILE *psar, unsigned int header_offset, int header_size, unsigned char *pgd_key, int disc_num)
 {
 	if (psar == NULL)
 	{
@@ -205,7 +206,8 @@ int decrypt_iso_header(FILE *psar, int header_offset, int header_size, unsigned 
 	}
 
 	// Seek to the ISO header.
-	fseek(psar, header_offset, SEEK_SET);
+	//fseek(psar, header_offset, SEEK_SET);
+	_fseeki64(psar, header_offset, SEEK_SET);
 
 	// Read the ISO header.
 	unsigned char *iso_header = new unsigned char[header_size];
@@ -281,7 +283,7 @@ int decrypt_iso_map(FILE *psar, int map_offset, int map_size, unsigned char *pgd
 	return 0;
 }
 
-int build_iso(FILE *psar, FILE *iso_table, int base_offset, int disc_num)
+int build_iso(FILE *psar, FILE *iso_table, unsigned int base_offset, int disc_num)
 {
 	if ((psar == NULL) || (iso_table == NULL))
 	{
@@ -317,7 +319,7 @@ int build_iso(FILE *psar, FILE *iso_table, int base_offset, int disc_num)
 		return -1;
 	}
 
-	int iso_base_offset = 0x100000 + base_offset;  // Start of compressed ISO data.
+	unsigned int iso_base_offset = 0x100000 + base_offset;  // Start of compressed ISO data.
 	ISO_ENTRY entry[sizeof(ISO_ENTRY)];
 	memset(entry, 0, sizeof(ISO_ENTRY));
 
@@ -328,7 +330,7 @@ int build_iso(FILE *psar, FILE *iso_table, int base_offset, int disc_num)
 	while (entry->size > 0)
 	{
 		// Locate the block offset in the DATA.PSAR.
-		fseek(psar, iso_base_offset + entry->offset, SEEK_SET);
+		_fseeki64(psar, static_cast<long long>(iso_base_offset) + entry->offset, SEEK_SET);
 		fread(iso_block_comp, entry->size, 1, psar);
 
 		// Decompress if necessary.
@@ -641,7 +643,7 @@ int decrypt_multi_disc(FILE *psar, int psar_size, int startdat_offset, unsigned 
 	// - The final data block contains the disc title, NULL padding and some unknown integers.
 
 	// Get the discs' offsets.
-	int disc1_offset, disc2_offset, disc3_offset, disc4_offset, disc5_offset;
+	unsigned int disc1_offset, disc2_offset, disc3_offset, disc4_offset, disc5_offset;
 	fread(&disc1_offset, sizeof(disc1_offset), 1, iso_map);
 	fread(&disc2_offset, sizeof(disc2_offset), 1, iso_map);
 	fread(&disc3_offset, sizeof(disc3_offset), 1, iso_map);
@@ -882,6 +884,7 @@ int main(int argc, char **argv)
 	}
 
 	FILE* input = fopen(argv[arg_offset + 1], "rb");
+	long long input_size = std::filesystem::file_size(argv[arg_offset + 1]);
 
 	// Start KIRK.
 	kirk_init();
@@ -920,7 +923,7 @@ int main(int argc, char **argv)
 	_chdir("PBP");
 
 	// Unpack the EBOOT.PBP file.
-	if (unpack_pbp(input))
+	if (unpack_pbp(input, input_size))
 	{
 		printf("ERROR: Failed to unpack %s!", argv[arg_offset + 1]);
 		_chdir("..");
@@ -950,9 +953,7 @@ int main(int argc, char **argv)
 	}
 
 	// Get DATA.PSAR size.
-	fseek(psar, 0, SEEK_END);
-	int psar_size = ftell(psar);
-	fseek(psar, 0, SEEK_SET);
+	long long psar_size = std::filesystem::file_size("../PBP/DATA.PSAR");
 
 	// Check PSISOIMG0000 or PSTITLEIMG0000 magic.
 	// NOTE: If the file represents a single disc, then PSISOIMG0000 is used.
@@ -983,7 +984,7 @@ int main(int argc, char **argv)
 
 	// Extract the STARTDAT sector.
 	// NOTE: STARTDAT data is normally a PNG file with an intro screen of the game.
-	int startdat_offset = extract_startdat(psar, isMultidisc);
+	unsigned long startdat_offset = extract_startdat(psar, isMultidisc);
 
 	// Decrypt the disc(s).
 	if (isMultidisc)

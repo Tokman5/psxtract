@@ -107,4 +107,4 @@ static char *pbp_filenames[8] = {
 
 int decrypt_pgd(unsigned char* pgd_data, int pgd_size, int flag, unsigned char* key);
 int decrypt_doc(unsigned char* data, int size);
-int unpack_pbp(FILE *infile);
+int unpack_pbp(FILE *infile, long long input_size);
